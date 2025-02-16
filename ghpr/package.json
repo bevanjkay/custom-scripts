@@ -1,0 +1,21 @@
+{
+  "name": "ghpr",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@octokit/core": "^3.5.1",
+    "@octokit/plugin-rest-endpoint-methods": "^7.0.1",
+    "@types/async": "^3.2.24",
+    "async": "^3.2.6",
+    "chalk": "^4.1.1",
+    "commander": "^8.0.0"
+  }
+}

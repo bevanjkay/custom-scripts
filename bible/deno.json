@@ -1,0 +1,9 @@
+{
+  "tasks": {
+    "dev": "deno run --allow-net main.ts",
+    "build": "deno compile --allow-net main.ts"
+  },
+  "imports": {
+    "youversion-suggest": "npm:youversion-suggest@^3.0.0"
+  }
+}
