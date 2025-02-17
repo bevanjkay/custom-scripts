@@ -17,8 +17,12 @@ try {
 
     const output = `${reference.name} (${reference.version.name})\n${reference.content}`
     console.log(output);
-} catch (error) {
-    console.error("Query:", input, " | Error:", error.message);
+} catch (error: unknown) {
+    if (error instanceof Error) {
+        console.error("Query:", input, " | Error:", error.message);
+    } else {
+        console.error("Query:", input, " | Error:", error);
+    }
     Deno.exit();
 }
 
