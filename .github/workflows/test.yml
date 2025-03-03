@@ -2,7 +2,7 @@ name: Test
 
 on:
   pull_request:
-    branches: [ main, master ]
+    branches: [main, master]
     types: [opened, synchronize, reopened]
 
 jobs:
@@ -35,4 +35,4 @@ jobs:
       - name: Test fluro-songs project
         working-directory: ./fluro-songs
         run: |
-          deno test --allow-read --allow-net --allow-env 
+          deno test --allow-read --allow-net --allow-env
