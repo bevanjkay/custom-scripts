@@ -6,7 +6,7 @@ const myToken = Deno.env.get("GITHUB_TOKEN");
 if (!myToken) {
   console.error("GITHUB_TOKEN environment variable is required.");
   Deno.exit(1);
-};
+}
 
 const log = (type: "error" | "success" | "base" | null, message: string) => {
   switch (type) {
