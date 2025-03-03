@@ -1,0 +1,38 @@
+name: Test
+
+on:
+  pull_request:
+    branches: [ main, master ]
+    types: [opened, synchronize, reopened]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v1
+        with:
+          deno-version: 2.x
+
+      - name: Check formatting
+        run: |
+          deno fmt --check
+
+      - name: Test ghpr project
+        working-directory: ./ghpr
+        run: |
+          deno test --allow-read --allow-net --allow-env
+
+      - name: Test bible project
+        working-directory: ./bible
+        run: |
+          deno test --allow-read --allow-net
+
+      - name: Test fluro-songs project
+        working-directory: ./fluro-songs
+        run: |
+          deno test --allow-read --allow-net --allow-env 
