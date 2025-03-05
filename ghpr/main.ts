@@ -1,6 +1,6 @@
 import { Octokit } from "npm:@octokit/core";
 import { restEndpointMethods } from "npm:@octokit/plugin-rest-endpoint-methods";
-import { Command } from "@cliffy/command";
+import { Command } from "jsr:@cliffy/command@1.0.0-rc.7";
 
 const myToken = Deno.env.get("GITHUB_TOKEN");
 if (!myToken) {
@@ -28,9 +28,14 @@ const log = (type: "error" | "success" | "base" | null, message: string) => {
 const MyOctokit = Octokit.plugin(restEndpointMethods);
 const octokit = new MyOctokit({ auth: myToken });
 
+const denoConfig = JSON.parse(
+  await Deno.readTextFile(new URL("../deno.json", import.meta.url)),
+);
+const version = denoConfig.version;
+
 const { options } = await new Command()
   .name("ghpr")
-  .version("1.0.0")
+  .version(version)
   .description("Automate PR approvals and merges")
   .option("-t, --type <type>", "Type")
   .option("-r, --repo <repo>", "Repository name")
