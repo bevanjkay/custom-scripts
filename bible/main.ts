@@ -1,4 +1,4 @@
-import { fetchReferenceContent } from "youversion-suggest";
+import { fetchReferenceContent } from "npm:youversion-suggest";
 
 const input = Deno.args.join(" ");
 
