@@ -18,6 +18,10 @@ jobs:
         with:
           deno-version: 2.x
 
+      - name: Run deno check
+        run: |
+          deno check .
+
       - name: Check formatting
         run: |
           deno fmt --check
