@@ -1,6 +1,6 @@
-import { assertEquals, assertRejects } from "@std/assert";
-import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
-import { returnsNext, stub } from "@std/testing/mock";
+import { assertEquals } from "jsr:@std/assert";
+import { afterEach, beforeEach, describe, it } from "jsr:@std/testing/bdd";
+import { stub } from "jsr:@std/testing/mock";
 
 describe("GHPR Tests", () => {
   const originalEnv = Deno.env.get("GITHUB_TOKEN");

@@ -1,6 +1,6 @@
-import { assert, assertEquals, assertRejects } from "@std/assert";
-import { describe, it } from "@std/testing/bdd";
-import { fetchReferenceContent } from "youversion-suggest";
+import { assert, assertEquals, assertRejects } from "jsr:@std/assert";
+import { describe, it } from "jsr:@std/testing/bdd";
+import { fetchReferenceContent } from "npm:youversion-suggest";
 
 describe("Bible Reference Tests", () => {
   it("should fetch valid bible reference", async () => {

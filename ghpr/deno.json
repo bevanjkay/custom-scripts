@@ -1,4 +1,5 @@
 {
+  "version": "1.0.0",
   "tasks": {
     "start": "deno run main.ts",
     "dev": "deno run --watch main.ts",

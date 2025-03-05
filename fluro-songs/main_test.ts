@@ -1,8 +1,7 @@
-import { assertEquals, assertRejects } from "@std/assert";
-import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
-import { stub } from "@std/testing/mock";
+import { assertEquals } from "jsr:@std/assert";
+import { afterEach, beforeEach, describe, it } from "jsr:@std/testing/bdd";
 import { removeHTML } from "./utils.ts";
-import type { FluroResponse, Plan } from "./types.ts";
+import type { Plan } from "./types.ts";
 
 describe("Fluro Songs Tests", () => {
   const originalEnv = {
