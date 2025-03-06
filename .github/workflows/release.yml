@@ -89,8 +89,6 @@ jobs:
           mv deno.json.tmp deno.json
           rm deno.json.bak
 
-          git config --global user.name 'GitHub Actions'
-          git config --global user.email 'github-actions@github.com'
           git add deno.json
           git commit -m "chore: bump version to $version"
           git push
