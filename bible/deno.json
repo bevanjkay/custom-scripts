@@ -1,5 +1,5 @@
 {
-  "version": "1.0.5",
+  "version": "1.0.6",
   "tasks": {
     "dev": "deno run --allow-net main.ts",
     "build": "deno compile --allow-net main.ts",
