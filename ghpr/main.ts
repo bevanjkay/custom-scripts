@@ -28,7 +28,6 @@ const log = (type: "error" | "success" | "base" | null, message: string) => {
 const MyOctokit = Octokit.plugin(restEndpointMethods);
 const octokit = new MyOctokit({ auth: myToken });
 
-
 const { options } = await new Command()
   .name("ghpr")
   .description("Automate PR approvals and merges")
