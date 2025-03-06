@@ -47,7 +47,6 @@ jobs:
         env:
           project: "${{ inputs.project }}"
           version: "${{ inputs.version }}"
-          GH_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
           GIT_COMMITTER_NAME: ${{ steps.git-user-config.outputs.name }}
           GIT_COMMITTER_EMAIL: ${{ steps.git-user-config.outputs.email }}
         run: |
