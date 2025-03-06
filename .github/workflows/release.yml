@@ -111,5 +111,5 @@ jobs:
           draft: false
           prerelease: false
           files: |
-            ${{ inputs.project }}/main
+            ${{ inputs.project }}/${{ inputs.project }}
 
