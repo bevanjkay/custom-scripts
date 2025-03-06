@@ -91,7 +91,7 @@ jobs:
 
           git add deno.json
           git commit -m "chore: bump version to $version"
-          git push
+          git push "https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
 
       - name: Build binary
         env:
