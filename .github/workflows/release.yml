@@ -1,0 +1,106 @@
+name: Release Project
+
+permissions: {}
+
+on:
+  workflow_dispatch:
+    inputs:
+      project:
+        description: "Project folder name (e.g., bible, fluro-songs, ghpr)"
+        required: true
+        type: string
+      version:
+        description: "New version number (e.g., 1.0.1)"
+        required: true
+        type: string
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@909cc5acb0fdd60627fb858598759246509fa755
+        with:
+          deno-version: v2.x
+
+      - name: Update version
+        env:
+          project: "${{ inputs.project }}"
+          version: "${{ inputs.version }}"
+          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+        permissions:
+          contents: write
+        run: |
+          cd $project
+          # Validate version format (semver)
+          if ! [[ $version =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Error: Version must be in semver format (e.g., 1.0.1)"
+            exit 1
+          fi
+
+          # Check if deno.json exists
+          if [ ! -f deno.json ]; then
+            echo "Error: deno.json not found in $project directory"
+            exit 1
+          fi
+
+          # Get current version and validate increment
+          current_version=$(jq -r '.version' deno.json)
+          if [ "$current_version" = "$version" ]; then
+            echo "Error: New version ($version) must be different from current version ($current_version)"
+            exit 1
+          fi
+
+          # Compare versions using sort -V (version sort)
+          if [ "$(printf '%s\n' "$current_version" "$version" | sort -V | tail -n1)" != "$version" ]; then
+            echo "Error: New version ($version) must be greater than current version ($current_version)"
+            exit 1
+          fi
+
+          # Create backup
+          cp deno.json deno.json.bak
+
+          # Update version in deno.json
+          if ! jq --arg version "$version" '.version = $version' deno.json > deno.json.tmp; then
+            echo "Error: Failed to update version in deno.json"
+            mv deno.json.bak deno.json
+            exit 1
+          fi
+
+          mv deno.json.tmp deno.json
+          rm deno.json.bak
+
+          git config --global user.name 'GitHub Actions'
+          git config --global user.email 'github-actions@github.com'
+          git add deno.json
+          git commit -m "chore: bump version to $version"
+          git push
+
+      - name: Build binary
+        env:
+          project: "${{ inputs.project }}"
+        run: |
+          cd $project
+          deno run build
+
+      - name: Create Release
+        id: create_release
+        env:
+          project: "${{ inputs.project }}"
+          version: "${{ inputs.version }}"
+          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+        uses: softprops/action-gh-release@c95fe1489396fe8a9eb87c0abf8aa5b2ef267fda
+        with:
+          tag_name: $project@$version
+          name: Release $project@$version
+          draft: false
+          prerelease: false
+          files: $project/main
+        permissions:
+          contents: write
+          pull-requests: write
