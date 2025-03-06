@@ -28,14 +28,9 @@ const log = (type: "error" | "success" | "base" | null, message: string) => {
 const MyOctokit = Octokit.plugin(restEndpointMethods);
 const octokit = new MyOctokit({ auth: myToken });
 
-const denoConfig = JSON.parse(
-  await Deno.readTextFile(new URL("../deno.json", import.meta.url)),
-);
-const version = denoConfig.version;
 
 const { options } = await new Command()
   .name("ghpr")
-  .version(version)
   .description("Automate PR approvals and merges")
   .option("-t, --type <type>", "Type")
   .option("-r, --repo <repo>", "Repository name")
