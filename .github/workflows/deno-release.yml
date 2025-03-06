@@ -1,4 +1,4 @@
-name: Release Project
+name: Release Deno Project
 
 permissions: {}
 
@@ -43,7 +43,7 @@ jobs:
           ssh: true
           signing_key: ${{ secrets.BKDBOT_SSH_SIGNING_KEY }}
 
-      - name: Update version
+      - name: Update deno version
         env:
           project: "${{ inputs.project }}"
           version: "${{ inputs.version }}"
@@ -93,7 +93,7 @@ jobs:
           git commit -m "chore: bump version to $version"
           git push "https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
 
-      - name: Build binary
+      - name: Build deno binary
         env:
           project: "${{ inputs.project }}"
         run: |
@@ -112,4 +112,3 @@ jobs:
           prerelease: false
           files: |
             ${{ inputs.project }}/${{ inputs.project }}
-
