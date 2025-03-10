@@ -51,19 +51,12 @@ if [[ $? -ne 0 || -z "$items" ]]; then
   exit 1
 fi
 
-autobump_file=$(brew --repository $1)/.github/autobump.txt
-# Check if `.github/autobump.txt` exists
-if [[ ! -f $autobump_file ]]; then
-  echo "Warning: $autobump_file not found."
-fi
+autobump_list=$(cat $(brew --repository $1)/.github/autobump.txt)
 
-# Read the contents of `.github/autobump.txt` into an array
-autobump_items=$(cat $autobump_file)
-
-# Find items in `items` that are not in `autobump_items`
+# create an array of items that are not in autobump_list
 missing_items=()
 while IFS= read -r item; do
-  if [[ ! " ${autobump_items[*]} " =~ " $item " ]]; then
+  if ! echo "$autobump_list" | grep -Fxq "$item"; then
     missing_items+=("$item")
   fi
 done <<< "$items"
