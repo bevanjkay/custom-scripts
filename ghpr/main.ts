@@ -48,12 +48,12 @@ const { owner, repo, id, type, thankyou } = options as {
 
 if (!type) {
   log("error", "Please enter a type.");
-  Deno.exit(0);
+  Deno.exit(1);
 }
 
 if (!id) {
   log("error", "Please enter a PR ID.");
-  Deno.exit(0);
+  Deno.exit(1);
 }
 
 let ids = [] as number[];
@@ -63,7 +63,7 @@ if (id.split("-").length > 1) {
 
   if (range.length > 2) {
     log("error", "Invalid range specified!");
-    Deno.exit(0);
+    Deno.exit(1);
   }
 
   ids = [];
@@ -71,16 +71,40 @@ if (id.split("-").length > 1) {
   // if more than 50 items are selected, log and error and exit
   if (range[1] - range[0] > 50) {
     log("error", "Range is too large! Please select a range of 50 or less.");
-    Deno.exit(0);
+    Deno.exit(1);
   }
 
   // if range is backwards, log and error and exit
   if (range[1] - range[0] < 0) {
     log("error", "Invalid range specified!");
-    Deno.exit(0);
+    Deno.exit(1);
   }
 
   for (let x = range[0]; x <= range[1]; x++) {
+    ids.push(x);
+  }
+} else if (id.split("+").length > 1) {
+  const idParts = id.split("+");
+
+  if (idParts.length > 2) {
+    log("error", "Invalid range specified!");
+    Deno.exit(1);
+  }
+
+  const start = parseInt(idParts[0]);
+  const range = parseInt(idParts[1]);
+
+  if (range > 25) {
+    log("error", "Range is too large! Please select a range of 25 or less.");
+    Deno.exit(1);
+  }
+
+  ids = [];
+  for (
+    let x = start;
+    x < start + range;
+    x++
+  ) {
     ids.push(x);
   }
 } else {
