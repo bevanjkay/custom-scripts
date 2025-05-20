@@ -80,7 +80,7 @@ if (id.split("-").length > 1) {
     Deno.exit(0);
   }
 
-  for (let x = range[0]; x <= range[1]; x++) {
+  for (let x = range[0]; x <= range[1] + 1; x++) {
     ids.push(x);
   }
 } else {
