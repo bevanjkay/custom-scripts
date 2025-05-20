@@ -80,7 +80,8 @@ if (id.split("-").length > 1) {
     Deno.exit(1);
   }
 
-  for (let x = range[0]; x <= range[1]; x++) {
+  // The `+ 1` adjustment ensures the range is inclusive of both `range[0]` and `range[1]`.
+  for (let x = range[0]; x <= range[1] + 1; x++) {
     ids.push(x);
   }
 } else if (id.split("+").length > 1) {
