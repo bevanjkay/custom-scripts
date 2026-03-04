@@ -21,7 +21,7 @@ jobs:
       contents: write
       pull-requests: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
           persist-credentials: false
@@ -33,12 +33,12 @@ jobs:
 
       - name: Configure Git user
         id: git-user-config
-        uses: Homebrew/actions/git-user-config@master
+        uses: Homebrew/actions/git-user-config@04a6d8cfe9d251e2afb78c5bdc6274ec9642aea2 # master
         with:
           username: bkdbot
 
       - name: Set up commit signing
-        uses: Homebrew/actions/setup-commit-signing@master
+        uses: Homebrew/actions/setup-commit-signing@04a6d8cfe9d251e2afb78c5bdc6274ec9642aea2 # master
         with:
           ssh: true
           signing_key: ${{ secrets.BKDBOT_SSH_SIGNING_KEY }}
@@ -49,8 +49,11 @@ jobs:
           version: "${{ inputs.version }}"
           GIT_COMMITTER_NAME: ${{ steps.git-user-config.outputs.name }}
           GIT_COMMITTER_EMAIL: ${{ steps.git-user-config.outputs.email }}
+          GITHUB_ACTOR_SAFE: "${{ github.actor }}"
+          GITHUB_REPOSITORY_SAFE: "${{ github.repository }}"
+          GITHUB_TOKEN_SAFE: "${{ secrets.GITHUB_TOKEN }}"
         run: |
-          cd $project
+          cd "$project"
           # Validate version format (semver)
           if ! [[ $version =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "Error: Version must be in semver format (e.g., 1.0.1)"
@@ -91,13 +94,13 @@ jobs:
 
           git add deno.json
           git commit -m "chore: bump version to $version"
-          git push "https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
+          git push "https://${GITHUB_ACTOR_SAFE}:${GITHUB_TOKEN_SAFE}@github.com/${GITHUB_REPOSITORY_SAFE}.git"
 
       - name: Build deno binary
         env:
           project: "${{ inputs.project }}"
         run: |
-          cd $project
+          cd "$project"
           deno run build
 
       - name: Create Release

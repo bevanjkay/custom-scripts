@@ -1,56 +1,45 @@
 {
-  "version": "4",
+  "version": "5",
   "specifiers": {
-    "jsr:@std/assert@0.218.2": "0.218.2",
-    "jsr:@std/assert@^1.0.10": "1.0.11",
-    "jsr:@std/data-structures@^1.0.6": "1.0.6",
-    "jsr:@std/fmt@~0.218.2": "0.218.2",
-    "jsr:@std/fs@^1.0.9": "1.0.14",
-    "jsr:@std/internal@^1.0.5": "1.0.5",
-    "jsr:@std/path@^1.0.8": "1.0.8",
-    "jsr:@std/testing@0.218.2": "0.218.2",
-    "jsr:@std/testing@^1.0.9": "1.0.9",
-    "npm:youversion-suggest@*": "3.0.0",
-    "npm:youversion-suggest@3": "3.0.0"
+    "jsr:@std/assert@1.0.19": "1.0.19",
+    "jsr:@std/assert@^1.0.17": "1.0.19",
+    "jsr:@std/data-structures@^1.0.10": "1.0.10",
+    "jsr:@std/fs@^1.0.22": "1.0.23",
+    "jsr:@std/internal@^1.0.12": "1.0.12",
+    "jsr:@std/path@^1.1.4": "1.1.4",
+    "jsr:@std/testing@1.0.17": "1.0.17",
+    "jsr:@std/testing@^1.0.17": "1.0.17",
+    "npm:youversion-suggest@^4.0.1": "4.0.1"
   },
   "jsr": {
-    "@std/assert@0.218.2": {
-      "integrity": "7f0a5a1a8cf86607cd6c2c030584096e1ffad27fc9271429a8cb48cfbdee5eaf",
-      "dependencies": [
-        "jsr:@std/fmt"
-      ]
-    },
-    "@std/assert@1.0.11": {
-      "integrity": "2461ef3c368fe88bc60e186e7744a93112f16fd110022e113a0849e94d1c83c1",
+    "@std/assert@1.0.19": {
+      "integrity": "eaada96ee120cb980bc47e040f82814d786fe8162ecc53c91d8df60b8755991e",
       "dependencies": [
         "jsr:@std/internal"
       ]
     },
-    "@std/data-structures@1.0.6": {
-      "integrity": "76a7fd8080c66604c0496220a791860492ab21a04a63a969c0b9a0609bbbb760"
+    "@std/data-structures@1.0.10": {
+      "integrity": "f574f86b0e07c69b9edc555fcc814b57d29258bad39fd5a34ba8a80ecf033cfe"
     },
-    "@std/fmt@0.218.2": {
-      "integrity": "99526449d2505aa758b6cbef81e7dd471d8b28ec0dcb1491d122b284c548788a"
-    },
-    "@std/fs@1.0.14": {
-      "integrity": "1e84bf0b95fe08f41f1f4aea9717bbf29f45408a56ce073b0114474ce1c9fccf",
+    "@std/fs@1.0.23": {
+      "integrity": "3ecbae4ce4fee03b180fa710caff36bb5adb66631c46a6460aaad49515565a37",
       "dependencies": [
         "jsr:@std/path"
       ]
     },
-    "@std/internal@1.0.5": {
-      "integrity": "54a546004f769c1ac9e025abd15a76b6671ddc9687e2313b67376125650dc7ba"
+    "@std/internal@1.0.12": {
+      "integrity": "972a634fd5bc34b242024402972cd5143eac68d8dffaca5eaa4dba30ce17b027"
     },
-    "@std/path@1.0.8": {
-      "integrity": "548fa456bb6a04d3c1a1e7477986b6cffbce95102d0bb447c67c4ee70e0364be"
-    },
-    "@std/testing@0.218.2": {
-      "integrity": "49410b23584c924533786e6c117d71486c1daa65f4911fd6cfc95e4edba9de7f"
-    },
-    "@std/testing@1.0.9": {
-      "integrity": "9bdd4ac07cb13e7594ac30e90f6ceef7254ac83a9aeaa089be0008f33aab5cd4",
+    "@std/path@1.1.4": {
+      "integrity": "1d2d43f39efb1b42f0b1882a25486647cb851481862dc7313390b2bb044314b5",
       "dependencies": [
-        "jsr:@std/assert@^1.0.10",
+        "jsr:@std/internal"
+      ]
+    },
+    "@std/testing@1.0.17": {
+      "integrity": "87bdc2700fa98249d48a17cd72413352d3d3680dcfbdb64947fd0982d6bbf681",
+      "dependencies": [
+        "jsr:@std/assert@^1.0.17",
         "jsr:@std/data-structures",
         "jsr:@std/fs",
         "jsr:@std/internal",
@@ -78,11 +67,11 @@
     "@worker-tools/resolvable-promise@0.2.0-pre.6": {
       "integrity": "sha512-+5RcuruCLB/P3FYYb376RgyImXaq9BBQoOskUbgPyNK3O0AXPakrXUj1EELv+lcnUSdFws/ufdrrWODLJyoTmg=="
     },
-    "html-entities@2.5.2": {
-      "integrity": "sha512-K//PSRMQk4FZ78Kyau+mZurHn3FH0Vwr+H36eE0rPbeYkRRi9YxceYPhuN60UwWorxyKHhqoAJl2OFKa4BVtaA=="
+    "html-entities@2.6.0": {
+      "integrity": "sha512-kig+rMn/QOVRvr7c86gQ8lWXq+Hkv6CbAH1hLu+RG338StTpE8Z0b44SDVaqVu7HGKf27frdmUYEs9hTUX/cLQ=="
     },
-    "youversion-suggest@3.0.0": {
-      "integrity": "sha512-Kza6sujdnl6VD+Tbq22xKTz+3eNGgaLsg8YRg3wZccTgAYt3Chefa2XU2vHDczPZIoNVMsN6mJY1KuMYqBi3Rw==",
+    "youversion-suggest@4.0.1": {
+      "integrity": "sha512-R4W6hrr9FhbPxdZ8U215r5/+e+qBkWUmh76ihcCO3KNoQIAtaQ085M7wJgOi5WiVbZnYvRjT2+TzKE95+Q9ibg==",
       "dependencies": [
         "@worker-tools/html-rewriter",
         "html-entities"
@@ -91,10 +80,10 @@
   },
   "workspace": {
     "dependencies": [
-      "jsr:@std/assert@0.218.2",
-      "jsr:@std/testing@0.218.2",
-      "jsr:@std/testing@^1.0.9",
-      "npm:youversion-suggest@3"
+      "jsr:@std/assert@1.0.19",
+      "jsr:@std/testing@1.0.17",
+      "jsr:@std/testing@^1.0.17",
+      "npm:youversion-suggest@^4.0.1"
     ]
   }
 }
