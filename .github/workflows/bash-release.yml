@@ -45,14 +45,11 @@ jobs:
           signing_key: ${{ secrets.BKDBOT_SSH_SIGNING_KEY }}
 
       - name: Create Release
-        id: create_release
         env:
           GH_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
-        uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b
-        with:
-          tag_name: ${{ inputs.project }}-${{ inputs.version }}
-          name: Release ${{ inputs.project }}-${{ inputs.version }}
-          draft: false
-          prerelease: false
-          files: |
-            ${{ inputs.project }}/${{ inputs.project }}
+          project: "${{ inputs.project }}"
+          version: "${{ inputs.version }}"
+        run: |
+          gh release create "${project}-${version}" \
+            "${project}/${project}" \
+            --title "Release ${project}-${version}"
