@@ -17,6 +17,7 @@ on:
 jobs:
   release:
     runs-on: macos-latest
+    environment: github_actions
     permissions:
       contents: write
       pull-requests: write
