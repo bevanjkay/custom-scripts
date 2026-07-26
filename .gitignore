@@ -1,6 +1,3 @@
-# Deno specific
-/deno.lock
-
 # Environment variables
 .env
 *.env

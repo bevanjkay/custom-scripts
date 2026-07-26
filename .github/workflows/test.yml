@@ -26,6 +26,10 @@ jobs:
         run: |
           deno check .
 
+      - name: Lint
+        run: |
+          deno lint
+
       - name: Check formatting
         run: |
           deno fmt --check

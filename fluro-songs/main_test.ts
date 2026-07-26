@@ -1,5 +1,5 @@
-import { assertEquals } from "jsr:@std/assert";
-import { afterEach, beforeEach, describe, it } from "jsr:@std/testing/bdd";
+import { assertEquals } from "@std/assert";
+import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { removeHTML } from "./utils.ts";
 import type { Plan } from "./types.ts";
 
@@ -70,9 +70,9 @@ describe("Fluro Songs Tests", () => {
         },
       ];
 
-      const songName = "Grace";
+      const songName = "grace";
       const matchingSchedules = mockPlans[0].schedules.filter((schedule) =>
-        schedule.title.match(new RegExp(songName, "i"))
+        schedule.title.toLowerCase().includes(songName.toLowerCase())
       );
 
       assertEquals(matchingSchedules.length, 1);

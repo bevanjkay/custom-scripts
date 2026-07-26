@@ -1,4 +1,4 @@
-import Fluro from "npm:fluro";
+import Fluro from "fluro";
 import { removeHTML } from "./utils.ts";
 import type { FluroResponse, Plan } from "./types.ts";
 
@@ -12,45 +12,49 @@ const accountID = Deno.env.get("FLURO_ACCOUNT");
 const username = Deno.env.get("FLURO_USERNAME");
 const password = Deno.env.get("FLURO_PASSWORD");
 
-if (!username || !password) {
-  console.log(
-    "Please provide FLURO_USERNAME and FLURO_PASSWORD in the environment",
+if (!songName) {
+  console.error("Please provide a song name to search for.");
+  console.error("Usage: fluro-songs <song name>");
+  Deno.exit(1);
+}
+
+if (!accountID || !username || !password) {
+  console.error(
+    "Please provide FLURO_ACCOUNT, FLURO_USERNAME and FLURO_PASSWORD in the environment",
   );
   Deno.exit(1);
 }
 
 async function login() {
-  await fluro.auth.login({
-    username,
-    password,
-  })
-    .then(async function () {
-      await fluro.auth.changeAccount(accountID);
-    })
-    .catch(function (err: Error) {
-      console.log("Authentication Failed", fluro.utils.errorMessage(err));
-    });
+  try {
+    await fluro.auth.login({ username, password });
+    await fluro.auth.changeAccount(accountID);
+  } catch (err) {
+    console.error("Authentication Failed", fluro.utils.errorMessage(err));
+    Deno.exit(1);
+  }
 }
 
-async function getPlans() {
-  const plans = await fluro.api.get("/content/plan", {
-    cache: false,
-  }).then(function (res: FluroResponse) {
-    return res.data;
-  }).catch((err: Error) => {
-    console.log("Error fetching plans", fluro.utils.errorMessage(err));
-  });
-  return plans;
+async function getPlans(): Promise<Plan[]> {
+  try {
+    const res: FluroResponse = await fluro.api.get("/content/plan", {
+      cache: false,
+    });
+    return res.data as Plan[];
+  } catch (err) {
+    console.error("Error fetching plans", fluro.utils.errorMessage(err));
+    Deno.exit(1);
+  }
 }
 
 await login();
 
 const plans = await getPlans();
+const query = songName.toLowerCase();
 
-plans.forEach((plan: Plan) => {
-  plan.schedules.forEach((schedule) => {
-    const regex = new RegExp(songName, "i");
-    if (schedule.title.match(regex)) {
+for (const plan of plans) {
+  for (const schedule of plan.schedules) {
+    if (schedule.title.toLowerCase().includes(query)) {
       const notes = schedule.notes || {};
       console.log(
         schedule.title,
@@ -58,5 +62,5 @@ plans.forEach((plan: Plan) => {
         removeHTML(notes["Person Responsible"]),
       );
     }
-  });
-});
+  }
+}

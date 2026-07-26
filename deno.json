@@ -1,0 +1,13 @@
+{
+  "workspace": [
+    "./bible",
+    "./fluro-songs",
+    "./ghpr"
+  ],
+  "tasks": {
+    "check": "deno check .",
+    "lint": "deno lint",
+    "fmt": "deno fmt",
+    "test": "deno test --allow-read --allow-net --allow-env"
+  }
+}

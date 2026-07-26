@@ -1,14 +1,12 @@
-import { Octokit } from "npm:@octokit/core";
-import { restEndpointMethods } from "npm:@octokit/plugin-rest-endpoint-methods";
-import { Command } from "jsr:@cliffy/command@1.0.0-rc.7";
+import { Octokit } from "@octokit/core";
+import { restEndpointMethods } from "@octokit/plugin-rest-endpoint-methods";
+import { Command } from "@cliffy/command";
+import denoConfig from "./deno.json" with { type: "json" };
 
-const myToken = Deno.env.get("GITHUB_TOKEN");
-if (!myToken) {
-  console.error("GITHUB_TOKEN environment variable is required.");
-  Deno.exit(1);
-}
-
-const log = (type: "error" | "success" | "base" | null, message: string) => {
+export const log = (
+  type: "error" | "success" | "base" | null,
+  message: string,
+) => {
   switch (type) {
     case "error":
       console.log(`%cERROR:`, "color: red; font-weight: bold;", message);
@@ -17,101 +15,86 @@ const log = (type: "error" | "success" | "base" | null, message: string) => {
       console.log(`%cSUCCESS`, "color: green; font-weight: bold;", message);
       break;
     case "base":
-      console.log(message);
-      break;
     default:
       console.log(message);
       break;
   }
 };
 
+/**
+ * Parse a PR id argument into an explicit list of PR numbers.
+ * Supports: single ("42"), comma list ("1,2,3"), inclusive range ("1-3")
+ * and start+count ("1+3" => 1,2,3,4). Throws on malformed or oversized input.
+ */
+export function parseIds(id: string): number[] {
+  if (id.includes("-")) {
+    const range = id.split("-").map(Number);
+
+    if (range.length > 2 || range.some(Number.isNaN)) {
+      throw new Error("Invalid range specified!");
+    }
+    if (range[1] - range[0] < 0) {
+      throw new Error("Invalid range specified!");
+    }
+    if (range[1] - range[0] > 50) {
+      throw new Error(
+        "Range is too large! Please select a range of 50 or less.",
+      );
+    }
+
+    const ids: number[] = [];
+    for (let x = range[0]; x <= range[1]; x++) {
+      ids.push(x);
+    }
+    return ids;
+  }
+
+  if (id.includes("+")) {
+    const parts = id.split("+");
+    if (parts.length > 2) {
+      throw new Error("Invalid range specified!");
+    }
+
+    const start = Number(parts[0]);
+    const count = Number(parts[1]);
+    if (Number.isNaN(start) || Number.isNaN(count)) {
+      throw new Error("Invalid range specified!");
+    }
+    if (count > 25) {
+      throw new Error(
+        "Range is too large! Please select a range of 25 or less.",
+      );
+    }
+
+    const ids: number[] = [];
+    for (let x = start; x <= start + count; x++) {
+      ids.push(x);
+    }
+    return ids;
+  }
+
+  const ids = id.split(",").map(Number);
+  if (ids.some(Number.isNaN)) {
+    throw new Error("Invalid PR ID specified!");
+  }
+  return ids;
+}
+
 const MyOctokit = Octokit.plugin(restEndpointMethods);
-const octokit = new MyOctokit({ auth: myToken });
+type OctokitInstance = InstanceType<typeof MyOctokit>;
 
-const { options } = await new Command()
-  .name("ghpr")
-  .description("Automate PR approvals and merges")
-  .option("-t, --type <type>", "Type")
-  .option("-r, --repo <repo>", "Repository name")
-  .option("-i, --id <id>", "PR ID")
-  .option("-ty, --thankyou <thankyou>", "Thank you message")
-  .option("-o, --owner <owner>", "Organization name")
-  .parse(Deno.args);
-
-const { owner, repo, id, type, thankyou } = options as {
+interface RunOptions {
   owner: string;
   repo: string;
-  id: string;
   type: string;
-  thankyou: string;
-};
-
-if (!type) {
-  log("error", "Please enter a type.");
-  Deno.exit(1);
+  thankyou?: string;
 }
 
-if (!id) {
-  log("error", "Please enter a PR ID.");
-  Deno.exit(1);
-}
-
-let ids = [] as number[];
-
-if (id.split("-").length > 1) {
-  const range = id.split("-").map(Number) as number[];
-
-  if (range.length > 2) {
-    log("error", "Invalid range specified!");
-    Deno.exit(1);
-  }
-
-  ids = [];
-
-  // if more than 50 items are selected, log and error and exit
-  if (range[1] - range[0] > 50) {
-    log("error", "Range is too large! Please select a range of 50 or less.");
-    Deno.exit(1);
-  }
-
-  // if range is backwards, log and error and exit
-  if (range[1] - range[0] < 0) {
-    log("error", "Invalid range specified!");
-    Deno.exit(1);
-  }
-
-  for (let x = range[0]; x <= range[1]; x++) {
-    ids.push(x);
-  }
-} else if (id.split("+").length > 1) {
-  const idParts = id.split("+");
-
-  if (idParts.length > 2) {
-    log("error", "Invalid range specified!");
-    Deno.exit(1);
-  }
-
-  const start = parseInt(idParts[0]);
-  const range = parseInt(idParts[1]);
-
-  if (range > 25) {
-    log("error", "Range is too large! Please select a range of 25 or less.");
-    Deno.exit(1);
-  }
-
-  ids = [];
-  for (
-    let x = start;
-    x <= start + range;
-    x++
-  ) {
-    ids.push(x);
-  }
-} else {
-  ids = id.split(",").map(Number);
-}
-
-async function processPullRequest(itemID: number) {
+async function processPullRequest(
+  octokit: OctokitInstance,
+  { owner, repo, type, thankyou }: RunOptions,
+  itemID: number,
+) {
   const pr = await octokit.request(
     "GET /repos/{owner}/{repo}/pulls/{pull_number}",
     {
@@ -130,25 +113,38 @@ async function processPullRequest(itemID: number) {
     return;
   }
 
-  console.log(
-    `Enabling automerge for PR #${itemID} from ${author} in ${owner}/${repo}`,
-  );
+  // Enable auto-merge for automerge/merge/mergeonly, but not approve-only runs.
+  if (type !== "approve") {
+    console.log(
+      `Enabling automerge for PR #${itemID} from ${author} in ${owner}/${repo}`,
+    );
 
-  const response = await octokit.graphql(`query MyQuery {
-        repository(name: "${repo}", owner: "${owner}") {
-            pullRequest(number: ${itemID}) {
-                      id
-                  }
-            } 
-        }`) as { repository: { pullRequest: { id: string } } };
+    const response = await octokit.graphql<
+      { repository: { pullRequest: { id: string } } }
+    >(
+      `query ($owner: String!, $repo: String!, $number: Int!) {
+        repository(owner: $owner, name: $repo) {
+          pullRequest(number: $number) {
+            id
+          }
+        }
+      }`,
+      { owner, repo, number: itemID },
+    );
 
-  const graphqlID = response.repository.pullRequest.id;
+    const graphqlID = response.repository.pullRequest.id;
 
-  await octokit.graphql(`mutation MyMutation {
-            enablePullRequestAutoMerge(input: {pullRequestId: "${graphqlID}", mergeMethod: MERGE}) {
-                clientMutationId
-                 }
-        }`);
+    await octokit.graphql(
+      `mutation ($pullRequestId: ID!) {
+        enablePullRequestAutoMerge(
+          input: { pullRequestId: $pullRequestId, mergeMethod: MERGE }
+        ) {
+          clientMutationId
+        }
+      }`,
+      { pullRequestId: graphqlID },
+    );
+  }
 
   if (type == "approve" || type == "automerge") {
     console.log(`Approving PR ${itemID} from ${author} in ${owner}/${repo}`);
@@ -161,8 +157,8 @@ async function processPullRequest(itemID: number) {
       event: "APPROVE" | "REQUEST_CHANGES" | "COMMENT";
       body?: string;
     } = {
-      owner: owner as string,
-      repo: repo as string,
+      owner,
+      repo,
       pull_number: itemID,
       commit_id: pr.data.head.sha,
       event: "APPROVE",
@@ -206,14 +202,59 @@ async function processPullRequest(itemID: number) {
       log("success", "PR merged");
     }
   }
-
-  return;
 }
 
 async function main() {
+  const { options } = await new Command()
+    .name("ghpr")
+    .version(denoConfig.version)
+    .description("Automate PR approvals and merges")
+    .option("-t, --type <type>", "Type")
+    .option("-r, --repo <repo>", "Repository name")
+    .option("-i, --id <id>", "PR ID")
+    .option("-ty, --thankyou <thankyou>", "Thank you message")
+    .option("-o, --owner <owner>", "Organization name")
+    .parse(Deno.args);
+
+  const { owner, repo, id, type, thankyou } = options as {
+    owner: string;
+    repo: string;
+    id: string;
+    type: string;
+    thankyou?: string;
+  };
+
+  if (!type) {
+    log("error", "Please enter a type.");
+    Deno.exit(1);
+  }
+
+  if (!id) {
+    log("error", "Please enter a PR ID.");
+    Deno.exit(1);
+  }
+
+  let ids: number[];
+  try {
+    ids = parseIds(id);
+  } catch (error) {
+    log("error", error instanceof Error ? error.message : String(error));
+    Deno.exit(1);
+  }
+
+  const myToken = Deno.env.get("GITHUB_TOKEN");
+  if (!myToken) {
+    log("error", "GITHUB_TOKEN environment variable is required.");
+    Deno.exit(1);
+  }
+
+  const octokit = new MyOctokit({ auth: myToken });
+
   for (const item of ids) {
-    await processPullRequest(item);
+    await processPullRequest(octokit, { owner, repo, type, thankyou }, item);
   }
 }
 
-main();
+if (import.meta.main) {
+  main();
+}
