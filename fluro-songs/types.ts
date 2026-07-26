@@ -1,5 +1,5 @@
 export interface FluroResponse {
-  data: any[];
+  data: unknown[];
 }
 
 export interface Schedule {
