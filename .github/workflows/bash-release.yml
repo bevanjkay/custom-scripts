@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       project:
-        description: "Project folder name (e.g., bible, fluro-songs, ghpr)"
+        description: "Project folder name (e.g., lctap)"
         required: true
         type: string
       version:
@@ -51,5 +51,5 @@ jobs:
           version: "${{ inputs.version }}"
         run: |
           gh release create "${project}-${version}" \
-            "${project}/${project}" \
+            "${project}/${project}.sh" \
             --title "Release ${project}-${version}"
