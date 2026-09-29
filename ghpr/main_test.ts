@@ -1,7 +1,7 @@
 import { assertEquals, assertThrows } from "@std/assert";
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { stub } from "@std/testing/mock";
-import { log, parseIds } from "./main.ts";
+import { log, parseIds, thankYouMessage } from "./main.ts";
 
 describe("GHPR Tests", () => {
   const originalEnv = Deno.env.get("GITHUB_TOKEN");
@@ -50,6 +50,12 @@ describe("GHPR Tests", () => {
 
     it("rejects non-numeric input", () => {
       assertThrows(() => parseIds("abc"), Error, "Invalid PR ID");
+    });
+  });
+
+  describe("thankYouMessage", () => {
+    it("thanks the PR author", () => {
+      assertEquals(thankYouMessage("octocat"), "Thank you @octocat 🎉");
     });
   });
 

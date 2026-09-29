@@ -80,6 +80,8 @@ export function parseIds(id: string): number[] {
   return ids;
 }
 
+export const thankYouMessage = (author: string) => `Thank you @${author} 🎉`;
+
 const MyOctokit = Octokit.plugin(restEndpointMethods);
 type OctokitInstance = InstanceType<typeof MyOctokit>;
 
@@ -87,7 +89,7 @@ interface RunOptions {
   owner: string;
   repo: string;
   type: string;
-  thankyou?: string;
+  thankyou?: boolean;
 }
 
 async function processPullRequest(
@@ -165,7 +167,7 @@ async function processPullRequest(
     };
 
     if (thankyou) {
-      approveBody.body = `Thank you @${author}!`;
+      approveBody.body = thankYouMessage(author);
     }
 
     const approve = await octokit.request(
@@ -201,6 +203,18 @@ async function processPullRequest(
     } else {
       log("success", "PR merged");
     }
+
+    if (thankyou) {
+      await octokit.request(
+        "POST /repos/{owner}/{repo}/issues/{issue_number}/comments",
+        {
+          owner,
+          repo,
+          issue_number: itemID,
+          body: thankYouMessage(author),
+        },
+      );
+    }
   }
 }
 
@@ -212,7 +226,7 @@ async function main() {
     .option("-t, --type <type>", "Type")
     .option("-r, --repo <repo>", "Repository name")
     .option("-i, --id <id>", "PR ID")
-    .option("-ty, --thankyou <thankyou>", "Thank you message")
+    .option("--thankyou", "Thank the PR author")
     .option("-o, --owner <owner>", "Organization name")
     .parse(Deno.args);
 
@@ -221,7 +235,7 @@ async function main() {
     repo: string;
     id: string;
     type: string;
-    thankyou?: string;
+    thankyou?: boolean;
   };
 
   if (!type) {

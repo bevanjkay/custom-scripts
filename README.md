@@ -42,8 +42,11 @@ Bulk-approve and/or merge pull requests.
 ```sh
 cd ghpr
 GITHUB_TOKEN=… deno task start \
-  --owner <org> --repo <repo> --type <type> --id <ids> [--thankyou "message"]
+  --owner <org> --repo <repo> --type <type> --id <ids> [--thankyou]
 ```
+
+`--thankyou` posts "Thank you @<author> 🎉" on each PR: as the approval review
+body for `approve`/`automerge`, or as a comment for `merge`/`mergeonly`.
 
 **Types (`--type`):**
 
