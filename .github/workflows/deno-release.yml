@@ -9,10 +9,6 @@ on:
         description: "Project folder name (e.g., bible, fluro-songs, ghpr)"
         required: true
         type: string
-      version:
-        description: "New version number (e.g., 1.0.1)"
-        required: true
-        type: string
 
 jobs:
   release:
@@ -20,7 +16,6 @@ jobs:
     environment: github_actions
     permissions:
       contents: write
-      pull-requests: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -32,70 +27,18 @@ jobs:
         with:
           deno-version: v2.x
 
-      - name: Configure Git user
-        id: git-user-config
-        uses: Homebrew/actions/git-user-config@04a6d8cfe9d251e2afb78c5bdc6274ec9642aea2 # master
-        with:
-          username: bkdbot
-
-      - name: Set up commit signing
-        uses: Homebrew/actions/setup-commit-signing@04a6d8cfe9d251e2afb78c5bdc6274ec9642aea2 # master
-        with:
-          ssh: true
-          signing_key: ${{ secrets.BKDBOT_SSH_SIGNING_KEY }}
-
-      - name: Update deno version
+      - name: Read version
+        id: version
         env:
           project: "${{ inputs.project }}"
-          version: "${{ inputs.version }}"
-          GIT_COMMITTER_NAME: ${{ steps.git-user-config.outputs.name }}
-          GIT_COMMITTER_EMAIL: ${{ steps.git-user-config.outputs.email }}
-          GITHUB_ACTOR_SAFE: "${{ github.actor }}"
-          GITHUB_REPOSITORY_SAFE: "${{ github.repository }}"
-          GITHUB_TOKEN_SAFE: "${{ secrets.GITHUB_TOKEN }}"
+          GH_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
         run: |
-          cd "$project"
-          # Validate version format (semver)
-          if ! [[ $version =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Error: Version must be in semver format (e.g., 1.0.1)"
+          version=$(jq -r '.version' "$project/deno.json")
+          if gh release view "${project}-${version}" &> /dev/null; then
+            echo "Error: ${project}-${version} is already released; bump the version in $project/deno.json first"
             exit 1
           fi
-
-          # Check if deno.json exists
-          if [ ! -f deno.json ]; then
-            echo "Error: deno.json not found in $project directory"
-            exit 1
-          fi
-
-          # Get current version and validate increment
-          current_version=$(jq -r '.version' deno.json)
-          if [ "$current_version" = "$version" ]; then
-            echo "Error: New version ($version) must be different from current version ($current_version)"
-            exit 1
-          fi
-
-          # Compare versions using sort -V (version sort)
-          if [ "$(printf '%s\n' "$current_version" "$version" | sort -V | tail -n1)" != "$version" ]; then
-            echo "Error: New version ($version) must be greater than current version ($current_version)"
-            exit 1
-          fi
-
-          # Create backup
-          cp deno.json deno.json.bak
-
-          # Update version in deno.json
-          if ! jq --arg version "$version" '.version = $version' deno.json > deno.json.tmp; then
-            echo "Error: Failed to update version in deno.json"
-            mv deno.json.bak deno.json
-            exit 1
-          fi
-
-          mv deno.json.tmp deno.json
-          rm deno.json.bak
-
-          git add deno.json
-          git commit -m "chore: bump version to $version"
-          git push "https://${GITHUB_ACTOR_SAFE}:${GITHUB_TOKEN_SAFE}@github.com/${GITHUB_REPOSITORY_SAFE}.git"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
 
       - name: Build deno binary
         env:
@@ -108,7 +51,7 @@ jobs:
         env:
           GH_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
           project: "${{ inputs.project }}"
-          version: "${{ inputs.version }}"
+          version: "${{ steps.version.outputs.version }}"
         run: |
           gh release create "${project}-${version}" \
             "${project}/${project}" \
