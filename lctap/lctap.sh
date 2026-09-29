@@ -1,71 +1,59 @@
 #!/bin/bash
 
-# Check if `brew` is installed
-if ! command -v brew &> /dev/null; then
-  echo "Error: brew is not installed."
-  exit 1
-fi
+set -o pipefail
 
-# Check if `jq` is installed
-if ! command -v jq &> /dev/null; then
-  echo "Error: jq is not installed."
-  exit 1
-fi
+for command in brew jq parallel; do
+  if ! command -v "$command" &> /dev/null; then
+    echo "Error: $command is not installed."
+    exit 1
+  fi
+done
 
-# Check if `parallel` is installed
-if ! command -v parallel &> /dev/null; then
-  echo "Error: parallel is not installed."
-  exit 1
-fi
-
-# Check if a tap argument is provided
 if [[ -z $1 ]]; then
-  echo "Error: No tap argument provided.\n"
+  echo "Error: No tap argument provided."
   echo "Usage: ./lctap.sh <tap>"
   exit 1
 fi
 
 tap=$1
 
-# Check if the tap exists
-if ! brew tap | grep -q "$1"; then
-  echo "Error: Tap $1 not found."
+if ! brew tap | grep -Fxq "$tap"; then
+  echo "Error: Tap $tap not found."
   exit 1
 fi
 
+# Each item is "<formula|cask><TAB><name>" so livecheck gets the right flag.
 if [[ $tap == "homebrew/cask" ]]; then
-# Run `brew list -1 --casks` and store the output in an array
-  cask=true
-  items=$(curl -s https://formulae.brew.sh/api/cask.json | jq -r '.[] | select(.version != "latest") | select(.deprecated == false) | select(.disabled == false) | .token')
+  items=$(curl -fsS https://formulae.brew.sh/api/cask.json | jq -r '.[] | select(.version != "latest") | select(.deprecated == false) | select(.disabled == false) | "cask\t\(.token)"')
 elif [[ $tap == "homebrew/core" ]]; then
-  formula=true
-  items=$(curl -s https://formulae.brew.sh/api/formula.json | jq -r '.[] | select(.deprecated == false) | select(.disabled == false) | .name')
+  items=$(curl -fsS https://formulae.brew.sh/api/formula.json | jq -r '.[] | select(.deprecated == false) | select(.disabled == false) | "formula\t\(.name)"')
 else
-  cask=true
-  items=$(brew tap-info --json $1 | jq -r '.[] | .cask_tokens[]')
+  items=$(brew tap-info --json "$tap" | jq -r '.[] | (.formula_names[] | "formula\t\(.)"), (.cask_tokens[] | "cask\t\(.)")')
 fi
 
-# Check if the curl or jq command failed
+# shellcheck disable=SC2181
 if [[ $? -ne 0 || -z "$items" ]]; then
   echo "Error: Failed to fetch data."
   exit 1
 fi
 
-autobump_list=$(cat $(brew --repository $1)/.github/autobump.txt)
+autobump_file="$(brew --repository "$tap")/.github/autobump.txt"
+if [[ -f "$autobump_file" ]]; then
+  autobump_list=$(cat "$autobump_file")
+else
+  autobump_list=""
+fi
 
-# create an array of items that are not in autobump_list
 missing_items=()
-while IFS= read -r item; do
-  if ! echo "$autobump_list" | grep -Fxq "$item"; then
-    missing_items+=("$item")
+while IFS=$'\t' read -r kind name; do
+  # Tap names may be fully qualified (user/tap/name); autobump.txt is not.
+  if ! grep -Fxq "${name##*/}" <<< "$autobump_list"; then
+    missing_items+=("$kind"$'\t'"$name")
   fi
 done <<< "$items"
 
-# Output the missing items and run livecheck in parallel
 if [[ ${#missing_items[@]} -eq 0 ]]; then
-  echo "All items in 'brew list -1 --casks' are present in '.github/autobump.txt'."
-elif [[ $tap == "homebrew/core" ]]; then
-  printf '%s\n' "${missing_items[@]}" | parallel --tty -j6 'brew livecheck --formula {}'
+  echo "All items in $tap are present in '.github/autobump.txt'."
 else
-  printf '%s\n' "${missing_items[@]}" | parallel --tty -j6 'brew livecheck --cask {}'
+  printf '%s\n' "${missing_items[@]}" | parallel --tty -j6 --colsep '\t' 'brew livecheck --{1} {2}'
 fi

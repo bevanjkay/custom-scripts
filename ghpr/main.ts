@@ -1,6 +1,6 @@
 import { Octokit } from "@octokit/core";
 import { restEndpointMethods } from "@octokit/plugin-rest-endpoint-methods";
-import { Command } from "@cliffy/command";
+import { Command, EnumType } from "@cliffy/command";
 import denoConfig from "./deno.json" with { type: "json" };
 
 export const log = (
@@ -83,17 +83,51 @@ export function parseIds(id: string): number[] {
 export const thankYouMessage = (author: string) => `Thank you @${author} 🎉`;
 
 const MyOctokit = Octokit.plugin(restEndpointMethods);
-type OctokitInstance = InstanceType<typeof MyOctokit>;
+type GitHubClient = Pick<InstanceType<typeof MyOctokit>, "request" | "graphql">;
+
+const TYPES = ["approve", "automerge", "merge", "mergeonly"] as const;
+type PRType = typeof TYPES[number];
 
 interface RunOptions {
   owner: string;
   repo: string;
-  type: string;
+  type: PRType;
   thankyou?: boolean;
 }
 
-async function processPullRequest(
-  octokit: OctokitInstance,
+async function enableAutoMerge(
+  octokit: GitHubClient,
+  owner: string,
+  repo: string,
+  number: number,
+) {
+  const response = await octokit.graphql<
+    { repository: { pullRequest: { id: string } } }
+  >(
+    `query ($owner: String!, $repo: String!, $number: Int!) {
+      repository(owner: $owner, name: $repo) {
+        pullRequest(number: $number) {
+          id
+        }
+      }
+    }`,
+    { owner, repo, number },
+  );
+
+  await octokit.graphql(
+    `mutation ($pullRequestId: ID!) {
+      enablePullRequestAutoMerge(
+        input: { pullRequestId: $pullRequestId, mergeMethod: MERGE }
+      ) {
+        clientMutationId
+      }
+    }`,
+    { pullRequestId: response.repository.pullRequest.id },
+  );
+}
+
+export async function processPullRequest(
+  octokit: GitHubClient,
   { owner, repo, type, thankyou }: RunOptions,
   itemID: number,
 ) {
@@ -106,7 +140,7 @@ async function processPullRequest(
     },
   );
 
-  const author = pr?.data?.user?.login;
+  const author = pr.data.user?.login ?? "";
 
   if (pr.data.merged || pr.data.state == "closed") {
     console.log(
@@ -115,78 +149,44 @@ async function processPullRequest(
     return;
   }
 
-  // Enable auto-merge for automerge/merge/mergeonly, but not approve-only runs.
+  const merging = type == "merge" || type == "mergeonly";
+
   if (type !== "approve") {
     console.log(
       `Enabling automerge for PR #${itemID} from ${author} in ${owner}/${repo}`,
     );
 
-    const response = await octokit.graphql<
-      { repository: { pullRequest: { id: string } } }
-    >(
-      `query ($owner: String!, $repo: String!, $number: Int!) {
-        repository(owner: $owner, name: $repo) {
-          pullRequest(number: $number) {
-            id
-          }
-        }
-      }`,
-      { owner, repo, number: itemID },
-    );
-
-    const graphqlID = response.repository.pullRequest.id;
-
-    await octokit.graphql(
-      `mutation ($pullRequestId: ID!) {
-        enablePullRequestAutoMerge(
-          input: { pullRequestId: $pullRequestId, mergeMethod: MERGE }
-        ) {
-          clientMutationId
-        }
-      }`,
-      { pullRequestId: graphqlID },
-    );
+    try {
+      await enableAutoMerge(octokit, owner, repo, itemID);
+    } catch (error) {
+      // GitHub refuses auto-merge on PRs that are already mergeable; an
+      // immediate merge follows for these types anyway.
+      if (!merging) throw error;
+      log("base", `Could not enable automerge: ${(error as Error).message}`);
+    }
   }
 
-  if (type == "approve" || type == "automerge") {
+  if (type !== "mergeonly") {
     console.log(`Approving PR ${itemID} from ${author} in ${owner}/${repo}`);
 
-    const approveBody: {
-      owner: string;
-      repo: string;
-      pull_number: number;
-      commit_id: string;
-      event: "APPROVE" | "REQUEST_CHANGES" | "COMMENT";
-      body?: string;
-    } = {
-      owner,
-      repo,
-      pull_number: itemID,
-      commit_id: pr.data.head.sha,
-      event: "APPROVE",
-    };
-
-    if (thankyou) {
-      approveBody.body = thankYouMessage(author);
-    }
-
-    const approve = await octokit.request(
+    await octokit.request(
       "POST /repos/{owner}/{repo}/pulls/{pull_number}/reviews",
-      approveBody,
+      {
+        owner,
+        repo,
+        pull_number: itemID,
+        commit_id: pr.data.head.sha,
+        event: "APPROVE",
+        body: thankyou ? thankYouMessage(author) : undefined,
+      },
     );
-
-    if (approve.status !== 200) {
-      log("error", approve.data.body_text || "");
-      throw new Error("ERROR");
-    } else {
-      log("success", "PR approved");
-    }
+    log("success", "PR approved");
   }
 
-  if (type == "merge" || type == "mergeonly") {
+  if (merging) {
     console.log(`Merging PR ${itemID} from ${author} in ${owner}/${repo}`);
 
-    const merge = await octokit.request(
+    await octokit.request(
       "PUT /repos/{owner}/{repo}/pulls/{pull_number}/merge",
       {
         owner,
@@ -196,57 +196,38 @@ async function processPullRequest(
         merge_method: "merge",
       },
     );
+    log("success", "PR merged");
+  }
 
-    if (merge.status !== 200) {
-      log("error", merge.data.message);
-      throw new Error("ERROR");
-    } else {
-      log("success", "PR merged");
-    }
-
-    if (thankyou) {
-      await octokit.request(
-        "POST /repos/{owner}/{repo}/issues/{issue_number}/comments",
-        {
-          owner,
-          repo,
-          issue_number: itemID,
-          body: thankYouMessage(author),
-        },
-      );
-    }
+  if (thankyou && type == "mergeonly") {
+    await octokit.request(
+      "POST /repos/{owner}/{repo}/issues/{issue_number}/comments",
+      {
+        owner,
+        repo,
+        issue_number: itemID,
+        body: thankYouMessage(author),
+      },
+    );
   }
 }
 
-async function main() {
-  const { options } = await new Command()
+export function buildCommand() {
+  return new Command()
     .name("ghpr")
     .version(denoConfig.version)
     .description("Automate PR approvals and merges")
-    .option("-t, --type <type>", "Type")
-    .option("-r, --repo <repo>", "Repository name")
-    .option("-i, --id <id>", "PR ID")
+    .type("pr-type", new EnumType(TYPES))
+    .option("-t, --type <type:pr-type>", "Type", { required: true })
+    .option("-r, --repo <repo>", "Repository name", { required: true })
+    .option("-i, --id <id>", "PR ID", { required: true })
     .option("--thankyou", "Thank the PR author")
-    .option("-o, --owner <owner>", "Organization name")
-    .parse(Deno.args);
+    .option("-o, --owner <owner>", "Organization name", { required: true });
+}
 
-  const { owner, repo, id, type, thankyou } = options as {
-    owner: string;
-    repo: string;
-    id: string;
-    type: string;
-    thankyou?: boolean;
-  };
-
-  if (!type) {
-    log("error", "Please enter a type.");
-    Deno.exit(1);
-  }
-
-  if (!id) {
-    log("error", "Please enter a PR ID.");
-    Deno.exit(1);
-  }
+async function main() {
+  const { options } = await buildCommand().parse(Deno.args);
+  const { owner, repo, id, type, thankyou } = options;
 
   let ids: number[];
   try {
