@@ -1,82 +1,58 @@
 import { assertEquals } from "@std/assert";
-import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
-import { removeHTML } from "./utils.ts";
+import { describe, it } from "@std/testing/bdd";
+import { findSongs, removeHTML } from "./utils.ts";
 import type { Plan } from "./types.ts";
 
-describe("Fluro Songs Tests", () => {
-  const originalEnv = {
-    FLURO_ACCOUNT: Deno.env.get("FLURO_ACCOUNT"),
-    FLURO_USERNAME: Deno.env.get("FLURO_USERNAME"),
-    FLURO_PASSWORD: Deno.env.get("FLURO_PASSWORD"),
-  };
-
-  beforeEach(() => {
-    Deno.env.set("FLURO_ACCOUNT", "test-account");
-    Deno.env.set("FLURO_USERNAME", "test-user");
-    Deno.env.set("FLURO_PASSWORD", "test-pass");
+describe("removeHTML", () => {
+  it("removes HTML tags", () => {
+    const input = "<p>Test content</p><br/><div>More content</div>";
+    assertEquals(removeHTML(input), "Test contentMore content");
   });
 
-  afterEach(() => {
-    if (originalEnv.FLURO_ACCOUNT) {
-      Deno.env.set("FLURO_ACCOUNT", originalEnv.FLURO_ACCOUNT);
-    } else {
-      Deno.env.delete("FLURO_ACCOUNT");
-    }
-    if (originalEnv.FLURO_USERNAME) {
-      Deno.env.set("FLURO_USERNAME", originalEnv.FLURO_USERNAME);
-    } else {
-      Deno.env.delete("FLURO_USERNAME");
-    }
-    if (originalEnv.FLURO_PASSWORD) {
-      Deno.env.set("FLURO_PASSWORD", originalEnv.FLURO_PASSWORD);
-    } else {
-      Deno.env.delete("FLURO_PASSWORD");
-    }
+  it("decodes common HTML entities", () => {
+    assertEquals(
+      removeHTML(
+        "<p>Tom &amp; Jerry&nbsp;&lt;3 &quot;hi&quot; &#39;x&#39;</p>",
+      ),
+      `Tom & Jerry <3 "hi" 'x'`,
+    );
   });
 
-  describe("HTML Removal", () => {
-    it("should remove HTML tags", () => {
-      const input = "<p>Test content</p><br/><div>More content</div>";
-      const expected = "Test contentMore content";
-      assertEquals(removeHTML(input), expected);
-    });
-
-    it("should handle empty input", () => {
-      assertEquals(removeHTML(""), "");
-    });
-
-    it("should handle input without HTML", () => {
-      const input = "Plain text content";
-      assertEquals(removeHTML(input), input);
-    });
+  it("handles empty input", () => {
+    assertEquals(removeHTML(""), "");
   });
 
-  describe("Plan Processing", () => {
-    it("should filter plans by song name", () => {
-      const mockPlans: Plan[] = [
+  it("handles input without HTML", () => {
+    assertEquals(removeHTML("Plain text content"), "Plain text content");
+  });
+});
+
+describe("findSongs", () => {
+  const plans: Plan[] = [
+    {
+      schedules: [
         {
-          schedules: [
-            {
-              title: "Amazing Grace",
-              key: "G",
-              notes: { "Person Responsible": "John" },
-            },
-            {
-              title: "How Great Thou Art",
-              key: "D",
-              notes: { "Person Responsible": "Jane" },
-            },
-          ],
+          title: "Amazing Grace",
+          key: "G",
+          notes: { "Person Responsible": "John" },
         },
-      ];
+        {
+          title: "How Great Thou Art",
+          key: "D",
+          notes: { "Person Responsible": "Jane" },
+        },
+      ],
+    },
+    {},
+  ];
 
-      const songName = "grace";
-      const matchingSchedules = mockPlans[0].schedules.filter((schedule) =>
-        schedule.title.toLowerCase().includes(songName.toLowerCase())
-      );
+  it("matches schedule titles case-insensitively", () => {
+    assertEquals(findSongs(plans, "GRACE").map((s) => s.title), [
+      "Amazing Grace",
+    ]);
+  });
 
-      assertEquals(matchingSchedules.length, 1);
-      assertEquals(matchingSchedules[0].title, "Amazing Grace");
-    });
+  it("skips plans without schedules", () => {
+    assertEquals(findSongs([{}], "grace"), []);
   });
 });

@@ -1,5 +1,5 @@
 import Fluro from "fluro";
-import { removeHTML } from "./utils.ts";
+import { findSongs, removeHTML } from "./utils.ts";
 import type { FluroResponse, Plan } from "./types.ts";
 
 const fluro = new Fluro({
@@ -50,17 +50,11 @@ async function getPlans(): Promise<Plan[]> {
 await login();
 
 const plans = await getPlans();
-const query = songName.toLowerCase();
-
-for (const plan of plans) {
-  for (const schedule of plan.schedules) {
-    if (schedule.title.toLowerCase().includes(query)) {
-      const notes = schedule.notes || {};
-      console.log(
-        schedule.title,
-        schedule.key,
-        removeHTML(notes["Person Responsible"]),
-      );
-    }
-  }
+for (const schedule of findSongs(plans, songName)) {
+  const notes = schedule.notes || {};
+  console.log(
+    schedule.title,
+    schedule.key,
+    removeHTML(notes["Person Responsible"]),
+  );
 }
