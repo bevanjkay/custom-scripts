@@ -98,6 +98,6 @@ For a Homebrew tap, list tokens that are **not** in the tap's
 ## Releases
 
 Releases are cut from GitHub Actions via the **Release Deno Project** and
-**Release Bash Project** workflows (`workflow_dispatch`), which bump the
-project's version, build the binary, and publish a `<project>-<version>`
-release.
+**Release Bash Project** workflows (`workflow_dispatch`), which build the
+project and publish a `<project>-<version>` release. Deno projects release the
+version already in their `deno.json`, so bump it in a pull request first.
