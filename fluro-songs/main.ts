@@ -1,3 +1,4 @@
+import { print } from "./silence.ts";
 import Fluro from "fluro";
 import { findSongs, removeHTML } from "./utils.ts";
 import type { FluroResponse, Plan } from "./types.ts";
@@ -52,7 +53,7 @@ await login();
 const plans = await getPlans();
 for (const schedule of findSongs(plans, songName)) {
   const notes = schedule.notes || {};
-  console.log(
+  print(
     schedule.title,
     schedule.key,
     removeHTML(notes["Person Responsible"]),
