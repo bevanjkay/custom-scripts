@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { fetchReferenceContent } from "youversion-suggest";
 
 interface Reference {
@@ -10,11 +11,11 @@ export const formatReference = ({ name, version, content }: Reference) =>
   `${name} (${version.name})\n${content ?? ""}`;
 
 async function main() {
-  const input = Deno.args.join(" ");
+  const input = process.argv.slice(2).join(" ");
 
   if (!input) {
     console.error('Usage: bible <reference>, e.g. bible "John 3:16"');
-    Deno.exit(1);
+    process.exit(1);
   }
 
   try {
@@ -26,7 +27,7 @@ async function main() {
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : error;
     console.error("Query:", input, " | Error:", message);
-    Deno.exit(1);
+    process.exit(1);
   }
 }
 

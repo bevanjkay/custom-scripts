@@ -1,0 +1,25 @@
+{
+  "name": "bible",
+  "version": "1.1.1",
+  "description": "Print a Bible passage for a reference",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "bible": "dist/main.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "start": "node main.ts",
+    "dev": "node --watch main.ts",
+    "build": "tsc -p tsconfig.build.json",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "youversion-suggest": "^4.0.1"
+  }
+}

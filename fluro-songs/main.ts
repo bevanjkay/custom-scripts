@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { print } from "./silence.ts";
 import Fluro from "fluro";
 import { findSongs, removeHTML } from "./utils.ts";
@@ -7,23 +8,23 @@ const fluro = new Fluro({
   apiURL: "https://api.fluro.io",
 });
 
-const songName = Deno.args[0];
+const songName = process.argv[2];
 
-const accountID = Deno.env.get("FLURO_ACCOUNT");
-const username = Deno.env.get("FLURO_USERNAME");
-const password = Deno.env.get("FLURO_PASSWORD");
+const accountID = process.env.FLURO_ACCOUNT;
+const username = process.env.FLURO_USERNAME;
+const password = process.env.FLURO_PASSWORD;
 
 if (!songName) {
   console.error("Please provide a song name to search for.");
   console.error("Usage: fluro-songs <song name>");
-  Deno.exit(1);
+  process.exit(1);
 }
 
 if (!accountID || !username || !password) {
   console.error(
     "Please provide FLURO_ACCOUNT, FLURO_USERNAME and FLURO_PASSWORD in the environment",
   );
-  Deno.exit(1);
+  process.exit(1);
 }
 
 async function login() {
@@ -32,7 +33,7 @@ async function login() {
     await fluro.auth.changeAccount(accountID);
   } catch (err) {
     console.error("Authentication Failed", fluro.utils.errorMessage(err));
-    Deno.exit(1);
+    process.exit(1);
   }
 }
 
@@ -44,7 +45,7 @@ async function getPlans(): Promise<Plan[]> {
     return res.data as Plan[];
   } catch (err) {
     console.error("Error fetching plans", fluro.utils.errorMessage(err));
-    Deno.exit(1);
+    process.exit(1);
   }
 }
 
@@ -53,9 +54,5 @@ await login();
 const plans = await getPlans();
 for (const schedule of findSongs(plans, songName)) {
   const notes = schedule.notes || {};
-  print(
-    schedule.title,
-    schedule.key,
-    removeHTML(notes["Person Responsible"]),
-  );
+  print(schedule.title, schedule.key, removeHTML(notes["Person Responsible"]));
 }

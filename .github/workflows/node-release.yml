@@ -1,4 +1,4 @@
-name: Release Deno Project
+name: Release Node Project
 
 permissions: {}
 
@@ -12,20 +12,19 @@ on:
 
 jobs:
   release:
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     environment: github_actions
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          fetch-depth: 0
           persist-credentials: false
 
-      - name: Setup Deno
-        uses: denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          deno-version: v2.x
+          node-version: lts/*
 
       - name: Read version
         id: version
@@ -33,19 +32,20 @@ jobs:
           project: "${{ inputs.project }}"
           GH_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
         run: |
-          version=$(jq -r '.version' "$project/deno.json")
+          version=$(jq -r '.version' "$project/package.json")
           if gh release view "${project}-${version}" &> /dev/null; then
-            echo "Error: ${project}-${version} is already released; bump the version in $project/deno.json first"
+            echo "Error: ${project}-${version} is already released; bump the version in $project/package.json first"
             exit 1
           fi
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
-      - name: Build deno binary
+      - name: Build package
         env:
           project: "${{ inputs.project }}"
         run: |
-          cd "$project"
-          deno run build
+          npm ci
+          npm run build --workspace "$project"
+          npm pack --workspace "$project"
 
       - name: Create Release
         env:
@@ -54,5 +54,5 @@ jobs:
           version: "${{ steps.version.outputs.version }}"
         run: |
           gh release create "${project}-${version}" \
-            "${project}/${project}" \
+            "${project}-${version}.tgz" \
             --title "Release ${project}-${version}"

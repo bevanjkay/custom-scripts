@@ -1,0 +1,30 @@
+{
+  "name": "myscripts",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "bible",
+    "fluro-songs",
+    "ghpr"
+  ],
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "build": "npm run build --workspaces",
+    "check": "tsc --noEmit",
+    "lint": "biome lint",
+    "fmt": "biome format --write",
+    "test": "node --test"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.15",
+    "@types/node": "^26.6.5",
+    "typescript": "^6.0.3"
+  },
+  "overrides": {
+    "axios": "^0.34.0",
+    "moment": "^2.31.0",
+    "moment-timezone": "^0.5.48"
+  }
+}

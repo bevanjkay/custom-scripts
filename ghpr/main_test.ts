@@ -1,6 +1,6 @@
-import { assertEquals, assertRejects, assertThrows } from "@std/assert";
-import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
-import { stub } from "@std/testing/mock";
+import assert from "node:assert/strict";
+import { afterEach, beforeEach, describe, it, mock } from "node:test";
+import { styleText } from "node:util";
 import {
   buildCommand,
   log,
@@ -45,96 +45,83 @@ const COMMENT = "POST /repos/{owner}/{repo}/issues/{issue_number}/comments";
 const repo = { owner: "o", repo: "r" };
 
 describe("GHPR Tests", () => {
-  const originalEnv = Deno.env.get("GITHUB_TOKEN");
+  const originalEnv = process.env.GITHUB_TOKEN;
   const mockToken = "mock-token";
 
   beforeEach(() => {
-    Deno.env.set("GITHUB_TOKEN", mockToken);
+    process.env.GITHUB_TOKEN = mockToken;
   });
 
   afterEach(() => {
     if (originalEnv) {
-      Deno.env.set("GITHUB_TOKEN", originalEnv);
+      process.env.GITHUB_TOKEN = originalEnv;
     } else {
-      Deno.env.delete("GITHUB_TOKEN");
+      delete process.env.GITHUB_TOKEN;
     }
   });
 
   describe("parseIds", () => {
     it("parses a single ID", () => {
-      assertEquals(parseIds("42"), [42]);
+      assert.deepEqual(parseIds("42"), [42]);
     });
 
     it("parses comma-separated IDs", () => {
-      assertEquals(parseIds("1,2,3"), [1, 2, 3]);
+      assert.deepEqual(parseIds("1,2,3"), [1, 2, 3]);
     });
 
     it("parses an inclusive range", () => {
-      assertEquals(parseIds("1-3"), [1, 2, 3]);
+      assert.deepEqual(parseIds("1-3"), [1, 2, 3]);
     });
 
     it("parses a start+count range", () => {
-      assertEquals(parseIds("1+3"), [1, 2, 3, 4]);
+      assert.deepEqual(parseIds("1+3"), [1, 2, 3, 4]);
     });
 
     it("rejects a backwards range", () => {
-      assertThrows(() => parseIds("3-1"), Error, "Invalid range");
+      assert.throws(() => parseIds("3-1"), /Invalid range/);
     });
 
     it("rejects a range larger than 50", () => {
-      assertThrows(() => parseIds("1-52"), Error, "too large");
+      assert.throws(() => parseIds("1-52"), /too large/);
     });
 
     it("rejects a start+count larger than 25", () => {
-      assertThrows(() => parseIds("1+26"), Error, "too large");
+      assert.throws(() => parseIds("1+26"), /too large/);
     });
 
     it("rejects non-numeric input", () => {
-      assertThrows(() => parseIds("abc"), Error, "Invalid PR ID");
+      assert.throws(() => parseIds("abc"), /Invalid PR ID/);
     });
   });
 
   describe("thankYouMessage", () => {
     it("thanks the PR author", () => {
-      assertEquals(thankYouMessage("octocat"), "Thank you @octocat 🎉");
+      assert.equal(thankYouMessage("octocat"), "Thank you @octocat 🎉");
     });
   });
 
   describe("buildCommand", () => {
     const base = ["-o", "o", "-r", "r", "-i", "1"];
+    const parse = (args: string[]) =>
+      buildCommand()
+        .exitOverride()
+        .configureOutput({ writeErr: () => {} })
+        .parse(args, { from: "user" });
 
-    it("rejects an unknown type", async () => {
-      await assertRejects(
-        () => buildCommand().noExit().parse([...base, "-t", "aprove"]),
-        Error,
-        "aprove",
+    it("rejects an unknown type", () => {
+      assert.throws(() => parse([...base, "-t", "aprove"]), /aprove/);
+    });
+
+    it("requires an owner", () => {
+      assert.throws(
+        () => parse(["-r", "r", "-i", "1", "-t", "approve"]),
+        /owner/,
       );
     });
 
-    it("requires an owner", async () => {
-      await assertRejects(
-        () =>
-          buildCommand().noExit().parse([
-            "-r",
-            "r",
-            "-i",
-            "1",
-            "-t",
-            "approve",
-          ]),
-        Error,
-        "owner",
-      );
-    });
-
-    it("parses --thankyou as a boolean", async () => {
-      const { options } = await buildCommand().noExit().parse([
-        ...base,
-        "-t",
-        "merge",
-        "--thankyou",
-      ]);
-      assertEquals(options.thankyou, true);
+    it("parses --thankyou as a boolean", () => {
+      const options = parse([...base, "-t", "merge", "--thankyou"]).opts();
+      assert.equal(options.thankyou, true);
     });
   });
 
@@ -142,13 +129,13 @@ describe("GHPR Tests", () => {
     it("approves without enabling auto-merge for approve", async () => {
       const { octokit, calls } = fakeOctokit();
       await processPullRequest(octokit, { ...repo, type: "approve" }, 1);
-      assertEquals(calls.slice(1), [REVIEW]);
+      assert.deepEqual(calls.slice(1), [REVIEW]);
     });
 
     it("approves before merging for merge", async () => {
       const { octokit, calls } = fakeOctokit();
       await processPullRequest(octokit, { ...repo, type: "merge" }, 1);
-      assertEquals(calls.slice(1), [
+      assert.deepEqual(calls.slice(1), [
         "graphqlID",
         "enableAutoMerge",
         REVIEW,
@@ -159,20 +146,20 @@ describe("GHPR Tests", () => {
     it("merges without approving for mergeonly", async () => {
       const { octokit, calls } = fakeOctokit();
       await processPullRequest(octokit, { ...repo, type: "mergeonly" }, 1);
-      assertEquals(calls.includes(REVIEW), false);
-      assertEquals(calls.at(-1), MERGE);
+      assert.ok(!calls.includes(REVIEW));
+      assert.equal(calls.at(-1), MERGE);
     });
 
     it("still merges when auto-merge cannot be enabled", async () => {
       const { octokit, calls } = fakeOctokit({ autoMergeFails: true });
       await processPullRequest(octokit, { ...repo, type: "mergeonly" }, 1);
-      assertEquals(calls.at(-1), MERGE);
+      assert.equal(calls.at(-1), MERGE);
     });
 
     it("fails automerge when auto-merge cannot be enabled", async () => {
       const { octokit } = fakeOctokit({ autoMergeFails: true });
-      await assertRejects(() =>
-        processPullRequest(octokit, { ...repo, type: "automerge" }, 1)
+      await assert.rejects(
+        processPullRequest(octokit, { ...repo, type: "automerge" }, 1),
       );
     });
 
@@ -183,7 +170,7 @@ describe("GHPR Tests", () => {
         { ...repo, type: "mergeonly", thankyou: true },
         1,
       );
-      assertEquals(bodies[COMMENT], "Thank you @octocat 🎉");
+      assert.equal(bodies[COMMENT], "Thank you @octocat 🎉");
     });
 
     it("thanks the author in the review for merge", async () => {
@@ -193,34 +180,34 @@ describe("GHPR Tests", () => {
         { ...repo, type: "merge", thankyou: true },
         1,
       );
-      assertEquals(bodies[REVIEW], "Thank you @octocat 🎉");
-      assertEquals(calls.includes(COMMENT), false);
+      assert.equal(bodies[REVIEW], "Thank you @octocat 🎉");
+      assert.ok(!calls.includes(COMMENT));
     });
   });
 
   describe("log", () => {
     it("formats error messages correctly", () => {
-      const consoleLogStub = stub(console, "log");
+      const consoleLogStub = mock.method(console, "log", () => {});
       try {
         log("error", "Test error");
-        assertEquals(
-          consoleLogStub.calls[0].args,
-          ["%cERROR:", "color: red; font-weight: bold;", "Test error"],
-        );
+        assert.deepEqual(consoleLogStub.mock.calls[0].arguments, [
+          styleText(["red", "bold"], "ERROR:"),
+          "Test error",
+        ]);
       } finally {
-        consoleLogStub.restore();
+        consoleLogStub.mock.restore();
       }
     });
 
     it("passes plain messages through for base/null", () => {
-      const consoleLogStub = stub(console, "log");
+      const consoleLogStub = mock.method(console, "log", () => {});
       try {
         log("base", "hello");
         log(null, "world");
-        assertEquals(consoleLogStub.calls[0].args, ["hello"]);
-        assertEquals(consoleLogStub.calls[1].args, ["world"]);
+        assert.deepEqual(consoleLogStub.mock.calls[0].arguments, ["hello"]);
+        assert.deepEqual(consoleLogStub.mock.calls[1].arguments, ["world"]);
       } finally {
-        consoleLogStub.restore();
+        consoleLogStub.mock.restore();
       }
     });
   });

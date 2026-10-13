@@ -1,7 +1,9 @@
+#!/usr/bin/env node
 import { Octokit } from "@octokit/core";
 import { restEndpointMethods } from "@octokit/plugin-rest-endpoint-methods";
-import { Command, EnumType } from "@cliffy/command";
-import denoConfig from "./deno.json" with { type: "json" };
+import { Command, Option } from "commander";
+import { styleText } from "node:util";
+import packageJson from "./package.json" with { type: "json" };
 
 export const log = (
   type: "error" | "success" | "base" | null,
@@ -9,10 +11,10 @@ export const log = (
 ) => {
   switch (type) {
     case "error":
-      console.log(`%cERROR:`, "color: red; font-weight: bold;", message);
+      console.log(styleText(["red", "bold"], "ERROR:"), message);
       break;
     case "success":
-      console.log(`%cSUCCESS`, "color: green; font-weight: bold;", message);
+      console.log(styleText(["green", "bold"], "SUCCESS"), message);
       break;
     case "base":
     default:
@@ -86,7 +88,7 @@ const MyOctokit = Octokit.plugin(restEndpointMethods);
 type GitHubClient = Pick<InstanceType<typeof MyOctokit>, "request" | "graphql">;
 
 const TYPES = ["approve", "automerge", "merge", "mergeonly"] as const;
-type PRType = typeof TYPES[number];
+type PRType = (typeof TYPES)[number];
 
 interface RunOptions {
   owner: string;
@@ -101,9 +103,9 @@ async function enableAutoMerge(
   repo: string,
   number: number,
 ) {
-  const response = await octokit.graphql<
-    { repository: { pullRequest: { id: string } } }
-  >(
+  const response = await octokit.graphql<{
+    repository: { pullRequest: { id: string } };
+  }>(
     `query ($owner: String!, $repo: String!, $number: Int!) {
       repository(owner: $owner, name: $repo) {
         pullRequest(number: $number) {
@@ -142,14 +144,14 @@ export async function processPullRequest(
 
   const author = pr.data.user?.login ?? "";
 
-  if (pr.data.merged || pr.data.state == "closed") {
+  if (pr.data.merged || pr.data.state === "closed") {
     console.log(
       `PR #${itemID} from ${author} in ${owner}/${repo} is already merged or has been closed`,
     );
     return;
   }
 
-  const merging = type == "merge" || type == "mergeonly";
+  const merging = type === "merge" || type === "mergeonly";
 
   if (type !== "approve") {
     console.log(
@@ -199,7 +201,7 @@ export async function processPullRequest(
     log("success", "PR merged");
   }
 
-  if (thankyou && type == "mergeonly") {
+  if (thankyou && type === "mergeonly") {
     await octokit.request(
       "POST /repos/{owner}/{repo}/issues/{issue_number}/comments",
       {
@@ -215,32 +217,36 @@ export async function processPullRequest(
 export function buildCommand() {
   return new Command()
     .name("ghpr")
-    .version(denoConfig.version)
+    .version(packageJson.version)
     .description("Automate PR approvals and merges")
-    .type("pr-type", new EnumType(TYPES))
-    .option("-t, --type <type:pr-type>", "Type", { required: true })
-    .option("-r, --repo <repo>", "Repository name", { required: true })
-    .option("-i, --id <id>", "PR ID", { required: true })
+    .addOption(
+      new Option("-t, --type <type>", "Type")
+        .choices(TYPES)
+        .makeOptionMandatory(),
+    )
+    .requiredOption("-r, --repo <repo>", "Repository name")
+    .requiredOption("-i, --id <id>", "PR ID")
     .option("--thankyou", "Thank the PR author")
-    .option("-o, --owner <owner>", "Organization name", { required: true });
+    .requiredOption("-o, --owner <owner>", "Organization name");
 }
 
 async function main() {
-  const { options } = await buildCommand().parse(Deno.args);
-  const { owner, repo, id, type, thankyou } = options;
+  const { owner, repo, id, type, thankyou } = buildCommand()
+    .parse()
+    .opts<RunOptions & { id: string }>();
 
   let ids: number[];
   try {
     ids = parseIds(id);
   } catch (error) {
     log("error", error instanceof Error ? error.message : String(error));
-    Deno.exit(1);
+    process.exit(1);
   }
 
-  const myToken = Deno.env.get("GITHUB_TOKEN");
+  const myToken = process.env.GITHUB_TOKEN;
   if (!myToken) {
     log("error", "GITHUB_TOKEN environment variable is required.");
-    Deno.exit(1);
+    process.exit(1);
   }
 
   const octokit = new MyOctokit({ auth: myToken });
