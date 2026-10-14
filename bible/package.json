@@ -1,6 +1,6 @@
 {
   "name": "bible",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "description": "Print a Bible passage for a reference",
   "license": "MIT",
   "type": "module",
