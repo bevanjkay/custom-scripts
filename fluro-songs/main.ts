@@ -1,18 +1,10 @@
 #!/usr/bin/env node
-import { print } from "./silence.ts";
-import Fluro from "fluro";
+import { getPlans } from "./fluro.ts";
 import { findSongs, removeHTML } from "./utils.ts";
-import type { FluroResponse, Plan } from "./types.ts";
-
-const fluro = new Fluro({
-  apiURL: "https://api.fluro.io",
-});
+import type { Plan } from "./types.ts";
 
 const songName = process.argv[2];
-
-const accountID = process.env.FLURO_ACCOUNT;
-const username = process.env.FLURO_USERNAME;
-const password = process.env.FLURO_PASSWORD;
+const token = process.env.FLURO_TOKEN;
 
 if (!songName) {
   console.error("Please provide a song name to search for.");
@@ -20,39 +12,24 @@ if (!songName) {
   process.exit(1);
 }
 
-if (!accountID || !username || !password) {
-  console.error(
-    "Please provide FLURO_ACCOUNT, FLURO_USERNAME and FLURO_PASSWORD in the environment",
-  );
+if (!token) {
+  console.error("Please provide FLURO_TOKEN in the environment");
   process.exit(1);
 }
 
-async function login() {
-  try {
-    await fluro.auth.login({ username, password });
-    await fluro.auth.changeAccount(accountID);
-  } catch (err) {
-    console.error("Authentication Failed", fluro.utils.errorMessage(err));
-    process.exit(1);
-  }
+let plans: Plan[];
+try {
+  plans = await getPlans(token);
+} catch (err) {
+  console.error("Error fetching plans", (err as Error).message);
+  process.exit(1);
 }
 
-async function getPlans(): Promise<Plan[]> {
-  try {
-    const res: FluroResponse = await fluro.api.get("/content/plan", {
-      cache: false,
-    });
-    return res.data as Plan[];
-  } catch (err) {
-    console.error("Error fetching plans", fluro.utils.errorMessage(err));
-    process.exit(1);
-  }
-}
-
-await login();
-
-const plans = await getPlans();
 for (const schedule of findSongs(plans, songName)) {
   const notes = schedule.notes || {};
-  print(schedule.title, schedule.key, removeHTML(notes["Person Responsible"]));
+  console.log(
+    schedule.title,
+    schedule.key,
+    removeHTML(notes["Person Responsible"]),
+  );
 }
