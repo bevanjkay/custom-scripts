@@ -81,11 +81,12 @@ npm start -- "John 3:16"
 Search [Fluro](https://fluro.io) service plans for a song and print its title,
 key and the person responsible.
 
-**Environment:** `FLURO_ACCOUNT`, `FLURO_USERNAME`, `FLURO_PASSWORD`.
+**Environment:** `FLURO_TOKEN` — a Fluro API key for the account, with
+permission to read plans.
 
 ```sh
 cd fluro-songs
-FLURO_ACCOUNT=… FLURO_USERNAME=… FLURO_PASSWORD=… npm start -- "Amazing Grace"
+FLURO_TOKEN=… npm start -- "Amazing Grace"
 ```
 
 ### lctap
