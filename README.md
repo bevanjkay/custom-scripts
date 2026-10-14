@@ -1,35 +1,38 @@
 # myscripts
 
 A small collection of personal command-line utilities. The three TypeScript
-tools run on [Deno](https://deno.com) and are organised as a
-[Deno workspace](https://docs.deno.com/runtime/fundamentals/workspaces/); the
-remaining tool is a standalone Bash script.
+tools run on [Node.js](https://nodejs.org) and are organised as an
+[npm workspace](https://docs.npmjs.com/cli/using-npm/workspaces); the remaining
+tool is a standalone Bash script.
 
 | Tool                          | Runtime | What it does                                                          |
 | ----------------------------- | ------- | --------------------------------------------------------------------- |
-| [`ghpr`](#ghpr)               | Deno    | Approve and/or merge GitHub pull requests in bulk.                    |
-| [`bible`](#bible)             | Deno    | Print a Bible passage for a reference from the command line.          |
-| [`fluro-songs`](#fluro-songs) | Deno    | Search Fluro service plans for a song and show its key and owner.     |
+| [`ghpr`](#ghpr)               | Node    | Approve and/or merge GitHub pull requests in bulk.                    |
+| [`bible`](#bible)             | Node    | Print a Bible passage for a reference from the command line.          |
+| [`fluro-songs`](#fluro-songs) | Node    | Search Fluro service plans for a song and show its key and owner.     |
 | [`lctap`](#lctap)             | Bash    | Run `brew livecheck` for Homebrew tokens missing from `autobump.txt`. |
 
 ## Prerequisites
 
-- [Deno](https://deno.com) 2.x for the TypeScript tools.
+- [Node.js](https://nodejs.org) 24 or later for the TypeScript tools.
 - `bash`, [`brew`](https://brew.sh), `jq` and `parallel` for `lctap`.
 
 ## Development
 
-Common tasks are defined at the workspace root and run across every project:
+Install dependencies with `npm install`. Common tasks are defined at the
+workspace root and run across every project:
 
 ```sh
-deno task check   # type-check
-deno task lint    # lint
-deno task fmt     # format
-deno task test    # run all tests
+npm run check   # type-check
+npm run lint    # lint
+npm run fmt     # format
+npm test        # run all tests
+npm run build   # compile each project to dist/
 ```
 
-Each project also builds a self-contained binary with `deno task build` from
-inside its directory.
+Node runs the TypeScript sources directly, so `npm start` works from inside a
+project without a build. The build emits plain JavaScript for installation,
+since Node won't strip types from files under `node_modules`.
 
 ## Tools
 
@@ -41,7 +44,7 @@ Bulk-approve and/or merge pull requests.
 
 ```sh
 cd ghpr
-GITHUB_TOKEN=… deno task start \
+GITHUB_TOKEN=… npm start -- \
   --owner <org> --repo <repo> --type <type> --id <ids> [--thankyou]
 ```
 
@@ -70,7 +73,7 @@ Print the text of a Bible reference (via
 
 ```sh
 cd bible
-deno task dev "John 3:16"
+npm start -- "John 3:16"
 ```
 
 ### fluro-songs
@@ -82,7 +85,7 @@ key and the person responsible.
 
 ```sh
 cd fluro-songs
-FLURO_ACCOUNT=… FLURO_USERNAME=… FLURO_PASSWORD=… deno task start "Amazing Grace"
+FLURO_ACCOUNT=… FLURO_USERNAME=… FLURO_PASSWORD=… npm start -- "Amazing Grace"
 ```
 
 ### lctap
@@ -97,7 +100,7 @@ For a Homebrew tap, list tokens that are **not** in the tap's
 
 ## Releases
 
-Releases are cut from GitHub Actions via the **Release Deno Project** and
+Releases are cut from GitHub Actions via the **Release Node Project** and
 **Release Bash Project** workflows (`workflow_dispatch`), which build the
-project and publish a `<project>-<version>` release. Deno projects release the
-version already in their `deno.json`, so bump it in a pull request first.
+project and publish a `<project>-<version>` release. Node projects release the
+version already in their `package.json`, so bump it in a pull request first.

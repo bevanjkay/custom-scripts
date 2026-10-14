@@ -17,34 +17,28 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Setup Deno
-        uses: denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          deno-version: 2.x
+          node-version: lts/*
+          cache: npm
 
-      - name: Run deno check
+      - name: Install dependencies
         run: |
-          deno check .
+          npm ci
 
-      - name: Lint
+      - name: Type-check
         run: |
-          deno lint
+          npm run check
 
-      - name: Check formatting
+      - name: Lint and check formatting
         run: |
-          deno fmt --check
+          npx biome ci
 
-      - name: Test ghpr project
-        working-directory: ./ghpr
+      - name: Test
         run: |
-          deno test --allow-read --allow-net --allow-env
+          npm test
 
-      - name: Test bible project
-        working-directory: ./bible
+      - name: Build
         run: |
-          deno test --allow-read --allow-net
-
-      - name: Test fluro-songs project
-        working-directory: ./fluro-songs
-        run: |
-          deno test --allow-read --allow-net --allow-env
+          npm run build

@@ -1,0 +1,25 @@
+{
+  "name": "fluro-songs",
+  "version": "1.1.2",
+  "description": "Search Fluro service plans for a song",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "fluro-songs": "dist/main.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "start": "node main.ts",
+    "dev": "node --watch main.ts",
+    "build": "tsc -p tsconfig.build.json",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "fluro": "^2.2.36"
+  }
+}

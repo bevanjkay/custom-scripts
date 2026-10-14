@@ -20,7 +20,7 @@ export const findSongs = (plans: Plan[], songName: string): Schedule[] => {
   const query = songName.toLowerCase();
   return plans.flatMap((plan) =>
     (plan.schedules ?? []).filter((schedule) =>
-      schedule.title?.toLowerCase().includes(query)
-    )
+      schedule.title?.toLowerCase().includes(query),
+    ),
   );
 };
