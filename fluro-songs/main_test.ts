@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
+import { afterEach, describe, it, mock } from "node:test";
+import { errorMessage, getPlans } from "./fluro.ts";
 import { findSongs, removeHTML } from "./utils.ts";
 import type { Plan } from "./types.ts";
 
@@ -55,5 +56,48 @@ describe("findSongs", () => {
 
   it("skips plans without schedules", () => {
     assert.deepEqual(findSongs([{}], "grace"), []);
+  });
+});
+
+describe("getPlans", () => {
+  afterEach(() => mock.restoreAll());
+
+  it("fetches plans with the token", async () => {
+    const fetchMock = mock.method(globalThis, "fetch", () =>
+      Promise.resolve(new Response(JSON.stringify([{ schedules: [] }]))),
+    );
+    assert.deepEqual(await getPlans("abc"), [{ schedules: [] }]);
+    const [url, init] = fetchMock.mock.calls[0].arguments;
+    assert.equal(url, "https://api.fluro.io/content/plan");
+    assert.equal(new Headers(init?.headers).get("Authorization"), "Bearer abc");
+  });
+
+  it("throws the API error message", async () => {
+    mock.method(globalThis, "fetch", () =>
+      Promise.resolve(
+        new Response(JSON.stringify({ message: "Invalid token" }), {
+          status: 401,
+        }),
+      ),
+    );
+    await assert.rejects(getPlans("bad"), /Invalid token/);
+  });
+});
+
+describe("errorMessage", () => {
+  it("prefers a JSON message", () => {
+    assert.equal(errorMessage(401, '{"message":"Nope"}'), "Nope");
+  });
+
+  it("uses a JSON string body", () => {
+    assert.equal(errorMessage(400, '"Bad request"'), "Bad request");
+  });
+
+  it("uses a plain-text body", () => {
+    assert.equal(errorMessage(502, "Bad Gateway"), "Bad Gateway");
+  });
+
+  it("falls back to the status", () => {
+    assert.equal(errorMessage(500, ""), "HTTP 500");
   });
 });

@@ -21,10 +21,5 @@
     "@biomejs/biome": "^2.5.15",
     "@types/node": "^26.6.5",
     "typescript": "^6.0.3"
-  },
-  "overrides": {
-    "axios": "^0.34.0",
-    "moment": "^2.31.0",
-    "moment-timezone": "^0.5.48"
   }
 }

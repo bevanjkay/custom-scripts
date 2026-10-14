@@ -1,7 +1,3 @@
-export interface FluroResponse {
-  data: unknown[];
-}
-
 export interface Schedule {
   title: string;
   key: string;
